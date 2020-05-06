@@ -81,8 +81,8 @@ signal cnt : STD_LOGIC_VECTOR (3 downto 0);
 begin
 
     PROCESS(P) begin 
-        edge <= P(1) & P(0) & P(7) & P(6) & P(5) & P(4) & P(3) & P(2);
-        late <= P(3) & P(2) & P(1) & P(0) & P(7) & P(6) & P(5) & P(4);
+        edge <= P(2) & P(3) & P(4) & P(5) & P(6) & P(7) & P(0) & P(1);
+        late <= P(4) & P(5) & P(6) & P(7) & P(0) & P(1) & P(2) & P(3);
     end process;
 
 
