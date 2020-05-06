@@ -1,90 +1,97 @@
---Package Declaration
-LIBRARY IEEE;
-USE ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+----------------------------------------------------------------------------------
+-- Company: 
+-- Engineer: 
+-- 
+-- Create Date: 02/21/2020 06:39:13 PM
+-- Design Name: 
+-- Module Name: phase_rotator - Behavioral
+-- Project Name: 
+-- Target Devices: 
+-- Tool Versions: 
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+-- 
+----------------------------------------------------------------------------------
 
-ENTITY PHASE_ROTATOR IS
-PORT
-    (
-    clk :IN STD_LOGIC; --clk
-    rst :IN STD_LOGIC; --reset counter
-    INC :IN STD_LOGIC; --increment counter
-    DEC :IN STD_LOGIC; --decrement counter
-    P :IN STD_LOGIC_VECTOR(7 downto 0); --8 clock pulses
-    --outputs
-    CLK_early :OUT STD_LOGIC;
-    CLK_edge :OUT STD_LOGIC;
-    CLK_late :OUT STD_LOGIC;
-    counter_out :OUT STD_LOGIC_VECTOR(2 downto 0)
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+--use IEEE.NUMERIC_STD.ALL;
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx leaf cells in this code.
+--library UNISIM;
+--use UNISIM.VComponents.all;
+
+entity phase_rotator is
+    Port ( 
+    INC : in std_logic;
+    DEC : in std_logic;
+    rst : in std_logic;
+    clk : in std_logic;
+    clk_early : out std_logic; 
+    clk_edge : out std_logic;
+    clk_late : out std_logic 
     );
-END PHASE_ROTATOR;
+end phase_rotator;
+
+architecture Behavioral of phase_rotator is
+
+    signal P: STD_LOGIC_VECTOR(7 downto 0);
+    signal edge : STD_LOGIC_VECTOR(7 downto 0);
+    signal late : STD_LOGIC_VECTOR(7 downto 0);
+
+COMPONENT counter 
+    PORT
+    (
+    INC : in std_logic;
+    DEC : in std_logic;
+    clk : in std_logic;
+    rst : in std_logic; 
+    count : out std_logic_vector (2 downto 0)
+    );
+END COMPONENT; 
+
+Component PG 
+    PORT ( 
+    clk : IN STD_LOGIC;
+    rst : IN STD_LOGIC;
+    P :OUT STD_LOGIC_VECTOR(7 DOWNTO 0) 
+    );
+end component;
+
+COMPONENT mux
+    PORT ( 
+    a : in std_logic_vector(7 downto 0); 
+    sel : in std_logic_Vector (2 downto 0);
+    b : out std_logic
+    );
+END COMPONENT;
+
+signal cnt : STD_LOGIC_VECTOR (3 downto 0);
+
+begin
+
+    PROCESS(P) begin 
+        edge <= P(1) & P(0) & P(7) & P(6) & P(5) & P(4) & P(3) & P(2);
+        late <= P(3) & P(2) & P(1) & P(0) & P(7) & P(6) & P(5) & P(4);
+    end process;
 
 
-ARCHITECTURE Behaviour of PHASE_ROTATOR IS
-    signal div_4_clk :STD_LOGIC;
-    signal counter :STD_LOGIC_VECTOR(2 downto 0);
-    --signal counter :STD_LOGIC_VECTOR(2 downto 0);
+    counter1 : counter PORT MAP (INC,DEC,clk,rst,cnt);
 
-    begin
-        counter_out <= counter;
-        process(clk, rst)begin
-            if rst = '0' then
-                counter <= "000";
-             elsif rising_edge(clk) then
-                if INC = '1'and DEC = '0' then
-                    counter <= counter + 1;
-                elsif DEC ='1' and INC = '0' then
-                    counter <= counter - 1;
-                else
-                    counter <= counter;
-                end if;
-            end if;
-        end process;
+    phase_generator : PG PORT MAP(clk,rst,P);
 
-        process(counter) begin
-        
-            case counter is
-                when "000" => --0
-                CLK_early <= P(0);
-                CLK_edge <= P(2);
-                CLK_late <= P(4);
-                
-                when "001" => --1
-                CLK_early <= P(1);
-                CLK_edge <= P(3);
-                CLK_late <= P(5);
-                
-                when "010" => --2
-                CLK_early <= P(2);
-                CLK_edge <= P(4);
-                CLK_late <= P(6);
-                
-                when "011" => --3
-                CLK_early <= P(3);
-                CLK_edge <= P(5);
-                CLK_late <= P(7);
-                
-                when "100" => --4
-                CLK_early <= P(4);
-                CLK_edge <= P(6);
-                CLK_late <= P(0);
-                
-                when "101" => --5
-                CLK_early <= P(5);
-                CLK_edge <= P(7);
-                CLK_late <= P(1);
-                
-                when "110" => --6
-                CLK_early <= P(6);
-                CLK_edge <= P(0);
-                CLK_late <= P(2);
-                
-                when "111" => --7
-                CLK_early <= P(7);
-                CLK_edge <= P(1);
-                CLK_late <= P(3);
-            end case;
-        end process;
-        
-END Behaviour;
+    mux_early : mux PORT MAP (P,cnt,clk_early);
+    mux_edge : mux PORT MAP (edge,cnt,clk_edge);
+    mux_late : mux PORT MAP(late,cnt,clk_late);
+
+end Behavioral;

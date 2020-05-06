@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 
-ENTITY TOP IS
+ENTITY cdr_top IS
 PORT
     (
 		Din 		:IN STD_LOGIC;
@@ -24,7 +24,6 @@ ARCHITECTURE Behaviour of  TOP IS
 	Q_clk_div	:STD_LOGIC;
 	Q_recov_clk	:STD_LOGIC;
 	clk_div		:STD_LOGIC;
-	P			:STD_LOGIC_VECTOR(7 downto 0);
 	clk_early	:STD_LOGIC;
 	clk_edge	:STD_LOGIC;
 	clk_late	:STD_LOGIC;
@@ -34,59 +33,45 @@ ARCHITECTURE Behaviour of  TOP IS
 	out_n		:STD_LOGIC;
 	
 	--components
-	 COMPONENT CLKD
-         GENERIC 
-            (
-                divide :integer
-            );
+	 COMPONENT divider
+	 
         PORT
             (
                 --inputs
-                sys_clk     :IN STD_LOGIC; --system clock
+                clk     :IN STD_LOGIC; --system clock
                 rst         :IN STD_LOGIC;
                 --outputs
-                div_clk     :IN STD_LOGIC --divided clock
+                clk_out     :IN STD_LOGIC --divided clock
                 
             );
     END COMPONENT;
 	
-	COMPONENT PHASE_GENERATOR
-	PORT
-    (
-       --inputs
-        ref_clk 		        :IN STD_LOGIC; --phase generator reference clock
-        rst                 :IN STD_LOGIC; --reset phase generator
-        --outputs
-         parallel_data_out  :OUT STD_LOGIC_VECTOR(7 downto 0) --10 bit register counter
-    );
-	END COMPONENT;
-	
+
 	COMPONENT PHASE_ROTATOR
 	PORT
     (
-        clk     :IN STD_LOGIC;  --clk
-        rst     :IN STD_LOGIC;  --reset counter
-        INC     :IN STD_LOGIC;  --increment counter
-        DEC     :IN STD_LOGIC; --decrement counter
-        P   	:IN STD_LOGIC_VECTOR(7 downto 0);   --8 clock pulses
+        INC     :IN STD_LOGIC; 
+        DEC     :IN STD_LOGIC;  
+        rst     :IN STD_LOGIC;  
+        clk     :IN STD_LOGIC; 
         --outputs
-        CLK_early           :OUT STD_LOGIC;
-        CLK_edge            :OUT STD_LOGIC;
-        CLK_late            :OUT STD_LOGIC
+        clk_early           :OUT STD_LOGIC;
+        clk_edge            :OUT STD_LOGIC;
+        clk_late            :OUT STD_LOGIC
      );
 	END COMPONENT;
 	
 	
-	COMPONENT BBPD
+	COMPONENT BB
 	PORT
     (
-        Din     	:IN STD_LOGIC;  --clk
-        CLK_early   :IN STD_LOGIC;
-        CLK_edge    :IN STD_LOGIC;
-        CLK_late    :IN STD_LOGIC;
+        Din     	:IN STD_LOGIC;  
+        clk_early   :IN STD_LOGIC;
+        clk_edge    :IN STD_LOGIC;
+        clk_late    :IN STD_LOGIC;
         --outputs
-        UP 			:OUT STD_LOGIC;
-		DOWN		:OUT STD_LOGIC
+        down 			:OUT STD_LOGIC;
+		up		:OUT STD_LOGIC
     );
 	END COMPONENT;
 	
@@ -99,7 +84,7 @@ ARCHITECTURE Behaviour of  TOP IS
 		In_N	:IN STD_LOGIC;
 		--outputs
 		Out_P	:OUT STD_LOGIC;
-		sOut_N	:OUT STD_LOGIC
+		Out_N	:OUT STD_LOGIC
     );
 	END COMPONENT;
 	
@@ -121,7 +106,7 @@ ARCHITECTURE Behaviour of  TOP IS
 	
 	
 	--clock divider
-	clk_div_4 : CLKD 
+	clk_div_4 : divider 
 		GENERIC MAP (4)
 		PORT MAP 
 			(
@@ -130,29 +115,21 @@ ARCHITECTURE Behaviour of  TOP IS
 				clk_div
 			);
 	
-	--phase generator
-	phase_gen : PHASE_GENERATOR
+			
+	phase_rot : phase_rotator
 		PORT MAP
-			(
-				Ref_clk,
-				RST,
-				P				
+			(			
+			    out_n,
+			    out_p,
+			    RST,
+			    Q_clk_div,
+			    
+			    clk_early,
+                clk_edge,
+                clk_late								
 			);
 			
-	phase_rot : PHASE_ROTATOR
-		PORT MAP
-			(
-				Q_clk_div,
-				RST,
-				out_n,
-				out_p,
-				P,
-				clk_early,
-				clk_edge,
-				clk_late				
-			);
-			
-	phase_dect : BBPD
+	phase_dect : BB
 		PORT MAP
 			(
 				Din,  
